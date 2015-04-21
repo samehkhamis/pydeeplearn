@@ -1,6 +1,6 @@
-# pydeeplearn: a Python Deep Learning library
+# pydeeplearn: a Python Deep Learning Library
 ## Introduction
-pydeeplearn is a simple deep learning library *written from scratch entirely in Python*. It is not meant to be a production-quality library (for that, check out Caffe, Theano, Mocha, or Deeplearning4j). I wrote this in my free time as an exercise and I am releasing the code for others to learn from. With that said, the codebase could definitely use more asserts and/or comments.
+pydeeplearn is a simple deep learning library *written from scratch entirely in Python*. It is not meant to be a production-quality library (for that, check out Caffe, Theano, Mocha, Torch, or Deeplearning4j). I wrote this in my free time as an exercise and I am releasing the code for others to learn from. With that said, the codebase could definitely use more asserts and/or comments.
 
 The design of the layers and the modularity is mostly inspired by the Mocha and Theano, and the convolution approach expands the image (im2col and col2im) similar to the approach in Caffe (Yangqing Jia) and code by Andrej Karpathy.
 
@@ -11,7 +11,7 @@ The design of the layers and the modularity is mostly inspired by the Mocha and 
 ## Features
 * Modular design
  * In-memory data, parameter, and label layers
- * Operations: convolution, pooling, dropout, and full-connected
+ * Operations: convolution, pooling, dropout, and fully-connected
  * Non-linearities: relu, tanh, and sigmoid
  * Losses: cross-entropy, softmax, hinge, and squared
  * Gradient descent updates: vanilla, momentum, Nesterov's, Adagrad, and RMSprop
@@ -24,9 +24,9 @@ The design of the layers and the modularity is mostly inspired by the Mocha and 
 
 ## Demos
 * Handwritten Digit Recognition: LeNet on MNIST, accuracy = 98.9% (LeCun et al, IEEE 1998)
- * Convolutional neural network (CNN) with a fixed structure
+ * Feed-forward convolutional neural network (CNN) with a fixed structure
 * Sentiment Analysis: RNN on Movie Reviews, accuracy = 79.4% (Socher et al, EMNLP 2013)
- * Varying structure recursive neural network (RNN), built through parsing a sentence dependency tree. Word representations are initialized from a pretrained WordVectors class.
+ * Varying structure recursive neural network (RNN), built through parsing a sentence dependency tree. Word representations are initialized from a pre-trained WordVectors class (GloVe or word2vec).
 
 ## Bonus
 * PTB Reader: parses dependency trees from the Penn Treebank Project
