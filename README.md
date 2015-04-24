@@ -2,7 +2,7 @@
 ## Introduction
 pydeeplearn is a simple deep learning library *written from scratch entirely in Python*. It is not meant to be a production-quality library (for that, check out Caffe, Theano, Mocha, Torch, or Deeplearning4j). I wrote this in my free time as an exercise and I am releasing the code for others to learn from. With that said, the codebase could definitely use more asserts and/or comments.
 
-The design of the layers and the modularity is mostly inspired by the Mocha and Theano, and the convolution approach expands the image (im2col and col2im) similar to the approach in Caffe (Yangqing Jia) and code by Andrej Karpathy.
+The design of the layers and the modularity is mostly inspired by Mocha and Theano, and the convolution approach expands the image (im2col and col2im) similar to the approach in Caffe (Yangqing Jia) and in code by Andrej Karpathy.
 
 * Author: Sameh Khamis (sameh@umiacs.umd.edu)
 * License: GPLv2 for non-commercial research purposes only
