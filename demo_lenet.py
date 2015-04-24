@@ -23,7 +23,7 @@ test_set = (test_set[0].reshape(-1, 28, 28, 1), test_set[1].reshape(-1, 1))
 
 # Create the CNN structure
 lambdaa = 1e-4
-data = Data(train_set[0].mean(axis=0))
+data = Data(np.r_[train_set[0], valid_set[0]].mean(axis=0))
 label = Label()
 c1 = Conv(data, nfilters=20, window=5, stride=1)
 p1 = Pool(c1, window=2, stride=2)
