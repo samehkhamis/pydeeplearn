@@ -498,7 +498,17 @@ class Loss(Op):
     
     @property
     def result(self):
-        return self.input[1]._result # result from label
+        return self._input[1]._result # result from label
+    
+    @property
+    def naugment(self):
+        return self._input[0].shape[0] / self._input[1].shape[0] # number of data augmentations
+    
+    def mean_result(self, result):
+        return result.reshape(result.shape[0] / self.naugment, self.naugment, result.shape[1]).mean(axis=1)
+    
+    def repeat(self, value):
+        return np.repeat(value, self.naugment, 0)
 
 class Label(Node):
     def __init__(self):
