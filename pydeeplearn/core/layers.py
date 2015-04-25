@@ -118,6 +118,30 @@ class Data(Node):
         self._value = self._value - self._mean
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
 
+class Preprocess(Op):
+    pass # Base class of data preprocessing
+
+class Crop(Preprocess):
+    def __init__(self, input, cropsize, stride):
+        self._input = [input]
+        shp = input.shape
+        self._cropsize = cropsize
+        self._stride = stride
+        self._ncrops = np.prod((np.array(shp[1:3]) - cropsize) / int(stride) + 1)
+        self._value = np.empty((self._ncrops * shp[0], cropsize[0], cropsize[1], shp[3]), dtype=DTYPE)
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def forward(self):
+        im = self._input[0]._value.transpose((0, 3, 1, 2))
+        col = im2col(im, self._cropsize[0], self._cropsize[1], 0, self._stride)
+        self._value = col.reshape(self._cropsize[0], self._cropsize[1], self.shape[3], -1).transpose((3, 0, 1, 2))
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def backward(self):
+        shp = self._input[0].shape
+        col = self._gradient.transpose((1, 2, 3, 0)).reshape(-1, self.shape[0])
+        self._input[0]._gradient += col2im(col, shp[0], shp[3], shp[1], shp[2], self._cropsize[0], self._cropsize[1], 0, self._stride).transpose((0, 2, 3, 1))
+
 class Param(Node):
     def __init__(self, val):
         self._input = []

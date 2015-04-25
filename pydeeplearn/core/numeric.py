@@ -46,7 +46,7 @@ def log1pexp(x): # log(1 + exp(x))
 
 def logsumexp(x): # log(sum(exp(x_i)))
     a = x.max(axis=1).reshape(-1, 1)
-    return np.log(np.sum(np.exp(x - a), axis=1)) + a
+    return np.log(np.sum(np.exp(x - a), axis=1)) + a.reshape(-1)
 
 def softmax(x): # exp(x_c) / sum(exp(x_i))
     result = np.exp(x - x.max(axis=1).reshape(-1, 1))
