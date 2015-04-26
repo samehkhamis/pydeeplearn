@@ -25,7 +25,7 @@ test_set = (test_set[0].reshape(-1, 28, 28, 1), test_set[1].reshape(-1, 1))
 lambdaa = 1e-4
 data = Data(np.r_[train_set[0], valid_set[0]].mean(axis=0))
 label = Label()
-cropped = Crop(data, cropsize=(26, 26))
+cropped = Crop(data, cropsize=(24, 24))
 c1 = Conv(cropped, nfilters=20, window=5, stride=1)
 p1 = Pool(c1, window=2, stride=2)
 c2 = Conv(p1, nfilters=50, window=5, stride=1)
@@ -42,7 +42,7 @@ cnn = CNN(obj, name='mnist', update=RMSprop(), step=InverseDecay())
 cnn.train(np.r_[train_set[0], valid_set[0]], np.r_[train_set[1], valid_set[1]], epochs=10)
 
 # CNN prediction
-nruns = 2
+nruns = 4
 predicted = np.zeros((test_set[0].shape[0], 10))
 for run in np.arange(nruns):
     predicted += cnn.predict(test_set[0]) / nruns
