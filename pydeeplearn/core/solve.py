@@ -18,22 +18,31 @@ class Step:
     def get(self):
         return self._alpha0
 
-class Fixed(Step):
-    def __init__(self, alpha0=0.01, niter=10, gamma=0.01):
+class FixedDecay(Step):
+    def __init__(self, alpha0=0.01, niter=100, gamma=0.95):
         self._alpha0 = alpha0
         self._niter = niter
         self._gamma = gamma
     
     def get(self, t):
-        return self._alpha0 * self._gamma**(t % self._niter)
+        return self._alpha0 * self._gamma**int(t / self._niter)
 
-class Inverse(Step):
-    def __init__(self, alpha0=0.01, gamma=0.01):
+class InverseDecay(Step):
+    def __init__(self, alpha0=0.01, gamma=0.01, degree=1.0):
+        self._alpha0 = alpha0
+        self._gamma = gamma
+        self._degree = degree
+    
+    def get(self, t):
+        return self._alpha0 / (1 + self._gamma * t)**self._degree
+
+class ExponentialDecay(Step):
+    def __init__(self, alpha0=0.01, gamma=0.0005):
         self._alpha0 = alpha0
         self._gamma = gamma
     
     def get(self, t):
-        return self._alpha0 / (1 + self._gamma * t)
+        return self._alpha0 * np.exp(-self._gamma * t)
 
 class Update: # Vanilla SGD (no momentum)
     def apply(self, params, rate):

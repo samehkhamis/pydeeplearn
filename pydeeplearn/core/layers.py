@@ -100,7 +100,7 @@ class Node:
         return dict
 
 class Op(Node):
-    pass  # Base class of non-data, non-param, and non-label layers
+    pass    # Base class of non-data, non-param, and non-label layers
 
 class Data(Node):
     def __init__(self, data_mean_or_shape):
@@ -119,28 +119,23 @@ class Data(Node):
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
 
 class Preprocess(Op):
-    pass # Base class of data preprocessing
+    pass    # Base class of data preprocessing (crop, contrast, tint, skew, etc.)
 
 class Crop(Preprocess):
-    def __init__(self, input, cropsize, stride):
+    def __init__(self, input, cropsize):
         self._input = [input]
-        shp = input.shape
         self._cropsize = cropsize
-        self._stride = stride
-        self._ncrops = np.prod((np.array(shp[1:3]) - cropsize) / int(stride) + 1)
-        self._value = np.empty((self._ncrops * shp[0], cropsize[0], cropsize[1], shp[3]), dtype=DTYPE)
+        self._value = np.empty((input.shape[0], cropsize[0], cropsize[1], input.shape[3]), dtype=DTYPE)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
     def forward(self):
-        im = self._input[0]._value.transpose((0, 3, 1, 2))
-        col = im2col(im, self._cropsize[0], self._cropsize[1], 0, self._stride)
-        self._value = col.reshape(self._cropsize[0], self._cropsize[1], self.shape[3], -1).transpose((3, 0, 1, 2))
+        high = np.array(self._input[0].shape[1:3]) - self._cropsize
+        self._pos = np.array([np.random.randint(h) for h in high])
+        self._value = self._input[0]._value[:, self._pos[0]:self._pos[0] + self._cropsize[0], self._pos[1]:self._pos[1] + self._cropsize[1], :]
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
     def backward(self):
-        shp = self._input[0].shape
-        col = self._gradient.transpose((1, 2, 3, 0)).reshape(-1, self.shape[0])
-        self._input[0]._gradient += col2im(col, shp[0], shp[3], shp[1], shp[2], self._cropsize[0], self._cropsize[1], 0, self._stride).transpose((0, 2, 3, 1))
+        self._input[0]._gradient[:, self._pos[0]:self._pos[0] + self._cropsize[0], self._pos[1]:self._pos[1] + self._cropsize[1], :] += self._gradient
 
 class Param(Node):
     def __init__(self, val):
@@ -499,16 +494,6 @@ class Loss(Op):
     @property
     def result(self):
         return self._input[1]._result # result from label
-    
-    @property
-    def naugment(self):
-        return self._input[0].shape[0] / self._input[1].shape[0] # number of data augmentations
-    
-    def mean_result(self, result):
-        return result.reshape(result.shape[0] / self.naugment, self.naugment, result.shape[1]).mean(axis=1)
-    
-    def repeat(self, value):
-        return np.repeat(value, self.naugment, 0)
 
 class Label(Node):
     def __init__(self):
@@ -525,45 +510,49 @@ class Xent(Loss):
     def forward(self):
         # A stable calculation, xent(sigmoid(x)) = (1 - t) + log(1 + exp(-x))
         self._input[1]._result = numeric.sigmoid(self._input[0]._value)
-        xent = (1 - self._input[1]._value.astype(DTYPE)) * self._input[0]._value + numeric.log1pexp(-self._input[0]._value)
+        labels = self._input[1]._value
+        xent = (1 - labels.astype(DTYPE)) * self._input[0]._value + numeric.log1pexp(-self._input[0]._value)
         self._value = (np.sum(xent) / DTYPE(xent.size)).reshape(1)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
     def backward(self):
         diff = self._input[1]._result - self._input[1]._value
-        self._input[0]._gradient += self._gradient * diff / DTYPE(self._input[1]._value.size)
+        self._input[0]._gradient += self._gradient * diff / DTYPE(diff.size)
 
 class Softmax(Loss):
     def forward(self):
         self._input[1]._result = numeric.softmax(self._input[0]._value)
+        labels = self._input[1]._value
         logz = numeric.logsumexp(self._input[0]._value)
-        value = logz - self._input[0]._value[np.arange(self._input[1]._value.shape[0]), self._input[1]._value.reshape(-1)]
+        value = logz - self._input[0]._value[np.arange(labels.shape[0]), labels.reshape(-1)]
         self._value = (np.sum(value) / DTYPE(value.size)).reshape(1)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
     def backward(self):
         diff = self._input[1]._result - numeric.onehot(self._input[1]._value, self._input[0].shape[1])
-        self._input[0]._gradient += self._gradient * diff / DTYPE(self._input[1]._value.size)
+        self._input[0]._gradient += self._gradient * diff / DTYPE(diff.size)
 
 class Hinge(Loss):
     def forward(self):
         self._input[1]._result = self._input[0]._value
-        self._target = (2 * self._input[1]._value - 1)
+        labels = self._input[1]._value
+        self._target = (2 * labels - 1)
         value = 1 - self._target * self._input[0]._value
         self._mask = value > 0
         self._value = (np.where(self._mask, value, 0).sum() / DTYPE(value.size)).reshape(1)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
     def backward(self):
-        self._input[0]._gradient += self._gradient * np.where(self._mask, -self._target, 0) / DTYPE(self._input[1]._value.size)
+        self._input[0]._gradient += self._gradient * np.where(self._mask, -self._target, 0) / DTYPE(self._target.size)
 
 class MultiHinge(Loss):
     def forward(self):
-        all = np.arange(self._input[1]._value.shape[0])
         self._input[1]._result = self._input[0]._value
-        correct = self._input[0]._value[all, self._input[1]._value.reshape(-1)]
-        value = self._input[0]._value - correct.reshape(-1, 1) + 1         # y_delta = 1
-        value[all, self._input[1]._value.reshape(-1)] = 0                  # t_delta = 0
+        all = np.arange(self._input[1]._value.shape[0])
+        labels = self._input[1]._value
+        correct = self._input[0]._value[all, labels.reshape(-1)]
+        value = self._input[0]._value - correct.reshape(-1, 1) + 1     # y_delta = 1
+        value[all, labels.reshape(-1)] = 0                             # t_delta = 0
         self._argmax = np.argmax(value, axis=1)
         value = value[all, self._argmax]
         self._mask = value > 0
@@ -572,10 +561,11 @@ class MultiHinge(Loss):
     
     def backward(self):
         all = np.arange(self._input[1]._value.shape[0])
+        labels = self._input[1]._value
         mask = np.zeros(self._input[0].shape, dtype=DTYPE)
         mask[all[self._mask], self._argmax[self._mask]] = 1
-        mask[all[self._mask], self._input[1]._value.reshape(-1)[self._mask]] = -1
-        self._input[0]._gradient += self._gradient * mask / DTYPE(self._input[1]._value.size)
+        mask[all[self._mask], labels.reshape(-1)[self._mask]] = -1
+        self._input[0]._gradient += self._gradient * mask / DTYPE(mask.size)
 
 class Squared(Loss):
     def forward(self):
@@ -585,4 +575,4 @@ class Squared(Loss):
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
     def backward(self):
-        self._input[0]._gradient += self._gradient * -self._diff / DTYPE(self._input[1]._value.size)
+        self._input[0]._gradient += self._gradient * -self._diff / DTYPE(self._diff.size)

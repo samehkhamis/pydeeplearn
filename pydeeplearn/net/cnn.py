@@ -11,7 +11,7 @@ class CNN(Net):
     def set_input(self, data, labels=None):
         # CNNs assumed to have one data node and one label node for now
         self._data[0]._value = data if data.ndim == 4 else data[np.newaxis]
-        self._labels[0]._value = labels if labels is not None else np.zeros(1, dtype=np.int32)
+        self._labels[0]._value = labels if labels is not None else np.zeros(self._data[0].shape[0], dtype=np.int32)
     
     def predict(self, data, batchsize=100):
         labels = []

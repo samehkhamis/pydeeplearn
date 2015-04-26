@@ -4,8 +4,8 @@
 
 import numpy as np
 import cPickle, gzip, urllib, os
-from pydeeplearn.core.layers import Data, Label, Conv, Pool, FC, Relu, Sum, Softmax
-from pydeeplearn.core.solve import RMSprop, Inverse
+from pydeeplearn.core.layers import Data, Label, Crop, Conv, Pool, FC, Relu, Dropout, Sum, Softmax
+from pydeeplearn.core.solve import RMSprop, InverseDecay
 from pydeeplearn.net.cnn import CNN
 
 # Load the dataset files
@@ -25,7 +25,8 @@ test_set = (test_set[0].reshape(-1, 28, 28, 1), test_set[1].reshape(-1, 1))
 lambdaa = 1e-4
 data = Data(np.r_[train_set[0], valid_set[0]].mean(axis=0))
 label = Label()
-c1 = Conv(data, nfilters=20, window=5, stride=1)
+cropped = Crop(data, cropsize=(26, 26))
+c1 = Conv(cropped, nfilters=20, window=5, stride=1)
 p1 = Pool(c1, window=2, stride=2)
 c2 = Conv(p1, nfilters=50, window=5, stride=1)
 p2 = Pool(c2, window=2, stride=2)
@@ -37,9 +38,12 @@ loss = Softmax(f2, label)
 obj = loss + lambdaa * reg
 
 # CNN training
-cnn = CNN(obj, name='mnist', update=RMSprop(), step=Inverse())
+cnn = CNN(obj, name='mnist', update=RMSprop(), step=InverseDecay())
 cnn.train(np.r_[train_set[0], valid_set[0]], np.r_[train_set[1], valid_set[1]], epochs=10)
 
 # CNN prediction
-predicted = cnn.predict(test_set[0])
-print (np.argmax(predicted, axis=1) == test_set[1].reshape(-1)).sum()
+nruns = 2
+predicted = np.zeros((test_set[0].shape[0], 10))
+for run in np.arange(nruns):
+    predicted += cnn.predict(test_set[0]) / nruns
+print (np.argmax(predicted, axis=1) == test_set[1].reshape(-1)).sum() / float(test_set[1].size)

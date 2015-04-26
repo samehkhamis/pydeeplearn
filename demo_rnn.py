@@ -5,7 +5,7 @@
 import numpy as np
 import urllib, os
 from zipfile import ZipFile
-from pydeeplearn.core.solve import RMSprop, Inverse
+from pydeeplearn.core.solve import RMSprop, InverseDecay
 from pydeeplearn.nlp.ptbtree import PTBTree
 from pydeeplearn.nlp.wordvectors import WordVectors
 from pydeeplearn.net.rnn import RNN
@@ -26,7 +26,7 @@ glove = WordVectors.from_glove(d=50)
 glove.project(np.random.randn(50, 25) * 0.0001)
 
 # RNN training
-rnn = RNN(glove, name='rnn', update=RMSprop(), step=Inverse())
+rnn = RNN(glove, lambdaa=1e-4, name='rnn', update=RMSprop(), step=InverseDecay())
 rnn.train(train_trees + dev_trees, epochs=10)
 
 # RNN prediction

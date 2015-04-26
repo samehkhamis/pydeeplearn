@@ -11,13 +11,13 @@ from solve import *
 from layers import *
 
 class Net:
-    def __init__(self, objective, update=RMSprop(), step=Inverse(), name='net', root_dir=None):
+    def __init__(self, objective, update=RMSprop(), step=InverseDecay(), name='net', root_dir=None):
         self.setup(update, step, name, root_dir)
         
         self._obj = objective
         self.process_objective()
     
-    def setup(self, update=RMSprop(), step=Inverse(), name='net', root_dir=None):
+    def setup(self, update=RMSprop(), step=InverseDecay(), name='net', root_dir=None):
         self._update = update
         self._step = step
         self._epoch = 0

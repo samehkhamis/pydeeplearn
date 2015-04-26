@@ -7,7 +7,7 @@ import numpy as np
 from ..core.net import *
 
 class RNN(Net):
-    def __init__(self, wordvecs, update=RMSprop(), step=Inverse(), name='net', root_dir=None):
+    def __init__(self, wordvecs, lambdaa=1e-3, update=RMSprop(), step=InverseDecay(), name='net', root_dir=None):
         self.setup(update, step, name, root_dir)
         
         # The wordvecs object is used to initialize word representations to glove/word2vec
@@ -18,6 +18,7 @@ class RNN(Net):
         self._wscore = Param.randn((d, 5))
         self._bscore = Param.zeros((5,))
         self._words = {}
+        self._lambdaa = lambdaa
     
     def _get_param(self, word):
         word_lower = word.lower()
@@ -30,9 +31,8 @@ class RNN(Net):
         if not isinstance(trees, list):
             trees = [trees]
         
-        lambdaa = 1e-4
         loss_weight = 1.0 / np.sum([tree.size for tree in trees])
-        self._obj = lambdaa * (Sum(self._w**2) + Sum(self._wscore**2))
+        self._obj = self._lambdaa * (Sum(self._w**2) + Sum(self._wscore**2))
         for tree in trees:
             self._obj = self._obj + loss_weight * self._parse(tree)
         

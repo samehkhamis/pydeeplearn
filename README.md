@@ -10,12 +10,12 @@ The design of the layers and the modularity is mostly inspired by Mocha and Thea
 
 ## Features
 * Modular design
- * In-memory data, parameter, and label layers
+ * In-memory data (with augmentations), parameter, and label layers
  * Operations: convolution, pooling, dropout, and fully-connected
  * Non-linearities: relu, tanh, and sigmoid
  * Losses: cross-entropy, softmax, hinge, and squared
  * Gradient descent updates: vanilla, momentum, Nesterov's, Adagrad, and RMSprop
- * Step decay: fixed and inverse
+ * Step decay: fixed, inverse, and exponential
 * Supports evaluation of DAG-connected networks (not just chains)
 * Snapshot saving and loading
 * Network visualization with Graphviz (export to dot files)
