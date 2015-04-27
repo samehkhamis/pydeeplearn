@@ -5,7 +5,7 @@
 
 import numpy as np
 import numeric
-from ..image import im2col, col2im
+from ..image import im2col, col2im, transform, invtransform
 
 DTYPE = np.float32
 
@@ -136,6 +136,55 @@ class Crop(Preprocess):
     
     def backward(self):
         self._input[0]._gradient[:, self._pos[0]:self._pos[0] + self._cropsize[0], self._pos[1]:self._pos[1] + self._cropsize[1], :] += self._gradient
+
+class Mirror(Preprocess):
+    def __init__(self, input):
+        self._input = [input]
+        self._value = np.empty(input.shape, dtype=DTYPE)
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def forward(self):
+        self._flip = np.random.rand() > 0.5
+        self._value = self._input[0]._value[:, :, ::-1, :] if self._flip else self._input[0]._value
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def backward(self):
+        self._input[0]._gradient += self._gradient[:, :, ::-1, :] if self._flip else self._gradient
+
+class Rotate(Preprocess):
+    def __init__(self, input, minangle=-10, maxangle=10):
+        self._input = [input]
+        self._angles = (minangle, maxangle)
+        self._value = np.empty(input.shape, dtype=DTYPE)
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def forward(self):
+        theta = np.random.randn() * ((self._angles[1] - self._angles[0]) / 6.0) # 6 sigma
+        sin_theta, cos_theta = np.sin(theta * np.pi / 180), np.cos(theta * np.pi / 180)
+        self._A = np.array([cos_theta, sin_theta, -sin_theta, cos_theta], dtype=np.float32).reshape(2, 2)
+        self._value = transform(self._input[0]._value, self._A)
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def backward(self):
+        self._input[0]._gradient += invtransform(self._gradient, self._A)
+
+class Shear(Preprocess):
+    def __init__(self, input, minshearx=-0.5, maxshearx=0.5, minsheary=-0.5, maxsheary=0.5):
+        self._input = [input]
+        self._shearx = (minshearx, maxshearx)
+        self._sheary = (minsheary, maxsheary)
+        self._value = np.empty(input.shape, dtype=DTYPE)
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def forward(self):
+        mx = np.random.randn() * ((self._shearx[1] - self._shearx[0]) / 6.0) # 6 sigma
+        my = np.random.randn() * ((self._sheary[1] - self._sheary[0]) / 6.0) # 6 sigma
+        self._A = np.array([1, mx, my, 1], dtype=np.float32).reshape(2, 2)
+        self._value = transform(self._input[0]._value, self._A)
+        self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
+    
+    def backward(self):
+        self._input[0]._gradient += invtransform(self._gradient, self._A)
 
 class Param(Node):
     def __init__(self, val):

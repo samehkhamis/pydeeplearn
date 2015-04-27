@@ -1,4 +1,4 @@
-# Cythonized imcol and colim
+# Cythonized functions: im2col, col2im, transform, invtransform
 # Started from Andrej Karpathy's code, made faster by avoiding np.pad
 # Author: Sameh Khamis (sameh@umiacs.umd.edu)
 # License: GPLv2 for non-commercial research purposes only
@@ -64,4 +64,66 @@ def col2im(np.ndarray[DTYPE_t, ndim=2] col, int N, int C, int H, int W,
     if padding > 0:
         return im_padded[:, :, padding:-padding, padding:-padding]
     return im_padded
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def transform(np.ndarray[DTYPE_t, ndim=4] im, np.ndarray[DTYPE_t, ndim=2] A):
+    cdef int N = im.shape[0], H = im.shape[1], W = im.shape[2], C = im.shape[3]
     
+    cdef np.ndarray[DTYPE_t, ndim=4] transformed = np.empty((N, H, W, C), dtype=DTYPE)
+    cdef int i, hj, wj, hk, wk, ci, hi, wi
+    cdef DTYPE_t hin, win, alphaw, alphah
+    
+    for hi in range(H):
+        for wi in range(W):
+            hin, win = DTYPE(hi) - H / 2.0, DTYPE(wi) - W / 2.0
+            alphah = A[0, 0] * hin + A[0, 1] * win + H / 2.0
+            alphaw = A[1, 0] * hin + A[1, 1] * win + W / 2.0
+            
+            hj, wj = int(alphah), int(alphaw)
+            hk, wk = hj + 1, wj + 1
+            alphah, alphaw = alphah - hj, alphaw - wj
+            
+            hj = 0 if hj < 0 else H - 1 if hj >= H else hj
+            wj = 0 if wj < 0 else W - 1 if wj >= W else wj
+            hk = 0 if hk < 0 else H - 1 if hk >= H else hk
+            wk = 0 if wk < 0 else W - 1 if wk >= W else wk
+            
+            for i in range(N):
+                for ci in range(C):
+                    transformed[i, hi, wi, ci] = alphah * alphaw * im[i, hj, wj, ci] +\
+                                                 alphah * (1 - alphaw) * im[i, hj, wk, ci] +\
+                                                 (1 - alphah) * alphaw * im[i, hk, wj, ci] +\
+                                                 (1 - alphah) * (1 - alphaw) * im[i, hk, wk, ci]
+    return transformed
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def invtransform(np.ndarray[DTYPE_t, ndim=4] transformed, np.ndarray[DTYPE_t, ndim=2] A):
+    cdef int N = transformed.shape[0], H = transformed.shape[1], W = transformed.shape[2], C = transformed.shape[3]
+    
+    cdef np.ndarray[DTYPE_t, ndim=4] im = np.zeros((N, H, W, C), dtype=DTYPE)
+    cdef int i, hj, wj, hk, wk, ci, hi, wi
+    cdef DTYPE_t hin, win, alphaw, alphah
+    
+    for hi in range(H):
+        for wi in range(W):
+            hin, win = DTYPE(hi) - H / 2.0, DTYPE(wi) - W / 2.0
+            alphah = A[0, 0] * hin + A[0, 1] * win + H / 2.0
+            alphaw = A[1, 0] * hin + A[1, 1] * win + W / 2.0
+            
+            hj, wj = int(alphah), int(alphaw)
+            hk, wk = hj + 1, wj + 1
+            alphah, alphaw = alphah - hj, alphaw - wj
+            
+            if hj >= 0 and hj < H and wj >= 0 and wj < W:
+                hk = 0 if hk < 0 else H - 1 if hk >= H else hk
+                wk = 0 if wk < 0 else W - 1 if wk >= W else wk
+                
+                for i in range(N):
+                    for ci in range(C):
+                        im[i, hj, wj, ci] += alphah * alphaw * transformed[i, hi, wi, ci]
+                        im[i, hj, wk, ci] += alphah * (1 - alphaw) * transformed[i, hi, wi, ci]
+                        im[i, hk, wj, ci] += (1 - alphah) * alphaw * transformed[i, hi, wi, ci]
+                        im[i, hk, wk, ci] += (1 - alphah) * (1 - alphaw) * transformed[i, hi, wi, ci]
+    return im

@@ -10,7 +10,8 @@ The design of the layers and the modularity is mostly inspired by Mocha and Thea
 
 ## Features
 * Modular design
- * In-memory data (with augmentations), parameter, and label layers
+ * In-memory data, parameter, and label layers
+ * Data augmentations: cropping, rotation, shearing, and mirroring
  * Operations: convolution, pooling, dropout, and fully-connected
  * Non-linearities: relu, tanh, and sigmoid
  * Losses: cross-entropy, softmax, hinge, and squared
@@ -24,7 +25,7 @@ The design of the layers and the modularity is mostly inspired by Mocha and Thea
 
 ## Demos
 * Handwritten Digit Recognition: LeNet on MNIST, accuracy = 98.9% (LeCun et al, IEEE 1998)
- * Feed-forward convolutional neural network (CNN) with a fixed structure
+ * Feed-forward convolutional neural network (CNN) with a fixed structure. Data is augmented through random crops and random shears.
 * Sentiment Analysis: RNN on Movie Reviews, accuracy = 79.4% (Socher et al, EMNLP 2013)
  * Varying structure recursive neural network (RNN), built through parsing a sentence dependency tree. Word representations are initialized from a pre-trained WordVectors class (GloVe or word2vec).
 
