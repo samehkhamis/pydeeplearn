@@ -22,7 +22,7 @@ class CNN(Net):
             self.set_input(data[i:i + batchsize])
             
             # calculate result and add to list
-            self.forward(dropout=False)
+            self.forward(deterministic=True)
             labels.append(self.result)
         return np.concatenate(labels)
     
@@ -38,8 +38,8 @@ class CNN(Net):
                 self.set_input(data[batchidx], labels[batchidx])
                 
                 # calculate f(x) and f'(x)
-                self.forward(dropout=True)
-                self.backward(dropout=True)
+                self.forward()
+                self.backward()
                 
                 # calculate the updates and apply then
                 alpha = self._step.get(self._iter)

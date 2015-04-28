@@ -128,13 +128,13 @@ class Crop(Preprocess):
         self._value = np.empty((input.shape[0], cropsize[0], cropsize[1], input.shape[3]), dtype=DTYPE)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def forward(self):
+    def forward(self, disabled=False):
         high = np.array(self._input[0].shape[1:3]) - self._cropsize
         self._pos = np.array([np.random.randint(h) for h in high])
         self._value = self._input[0]._value[:, self._pos[0]:self._pos[0] + self._cropsize[0], self._pos[1]:self._pos[1] + self._cropsize[1], :]
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def backward(self):
+    def backward(self, disabled=False):
         self._input[0]._gradient[:, self._pos[0]:self._pos[0] + self._cropsize[0], self._pos[1]:self._pos[1] + self._cropsize[1], :] += self._gradient
 
 class Mirror(Preprocess):
@@ -143,12 +143,12 @@ class Mirror(Preprocess):
         self._value = np.empty(input.shape, dtype=DTYPE)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def forward(self):
-        self._flip = np.random.rand() > 0.5
+    def forward(self, disabled=False):
+        self._flip = not disabled and np.random.rand() > 0.5
         self._value = self._input[0]._value[:, :, ::-1, :] if self._flip else self._input[0]._value
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def backward(self):
+    def backward(self, disabled=False):
         self._input[0]._gradient += self._gradient[:, :, ::-1, :] if self._flip else self._gradient
 
 class Rotate(Preprocess):
@@ -158,14 +158,14 @@ class Rotate(Preprocess):
         self._value = np.empty(input.shape, dtype=DTYPE)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def forward(self):
-        theta = np.random.randn() * ((self._angles[1] - self._angles[0]) / 6.0) # 6 sigma
+    def forward(self, disabled=False):
+        theta = np.random.randn() * ((self._angles[1] - self._angles[0]) / 6.0) if not disabled else 0 # 6 sigma
         sin_theta, cos_theta = np.sin(theta * np.pi / 180), np.cos(theta * np.pi / 180)
         self._A = np.array([cos_theta, sin_theta, -sin_theta, cos_theta], dtype=np.float32).reshape(2, 2)
         self._value = transform(self._input[0]._value, self._A)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def backward(self):
+    def backward(self, disabled=False):
         self._input[0]._gradient += invtransform(self._gradient, self._A)
 
 class Shear(Preprocess):
@@ -176,14 +176,14 @@ class Shear(Preprocess):
         self._value = np.empty(input.shape, dtype=DTYPE)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def forward(self):
-        mx = np.random.randn() * ((self._shearx[1] - self._shearx[0]) / 6.0) # 6 sigma
-        my = np.random.randn() * ((self._sheary[1] - self._sheary[0]) / 6.0) # 6 sigma
+    def forward(self, disabled=False):
+        mx = np.random.randn() * ((self._shearx[1] - self._shearx[0]) / 6.0) if not disabled else 0 # 6 sigma
+        my = np.random.randn() * ((self._sheary[1] - self._sheary[0]) / 6.0) if not disabled else 0 # 6 sigma
         self._A = np.array([1, mx, my, 1], dtype=np.float32).reshape(2, 2)
         self._value = transform(self._input[0]._value, self._A)
         self._gradient = np.zeros(self._value.shape, dtype=DTYPE)
     
-    def backward(self):
+    def backward(self, disabled=False):
         self._input[0]._gradient += invtransform(self._gradient, self._A)
 
 class Param(Node):

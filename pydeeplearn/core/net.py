@@ -70,19 +70,19 @@ class Net:
                     self._toposort(x, visited)
             self._sorted_nodes.append(node)
     
-    def forward(self, dropout=True):
+    def forward(self, deterministic=False):
         for node in self._sorted_nodes:
-            if isinstance(node, Dropout):
-                node.forward(disabled=not dropout)
+            if isinstance(node, Dropout) or isinstance(node, Preprocess):
+                node.forward(disabled=deterministic)
             else:
                 node.forward()
     
-    def backward(self, dropout=True):
+    def backward(self, deterministic=False):
         self._obj._gradient[:] = 1
         
         for node in reversed(self._sorted_nodes):
-            if isinstance(node, Dropout):
-                node.backward(disabled=not dropout)
+            if isinstance(node, Dropout) or isinstance(node, Preprocess):
+                node.backward(disabled=deterministic)
             else:
                 node.backward()
     
@@ -138,13 +138,13 @@ class Net:
             param = self._params[i]
             for d in np.arange(param.value.size):
                 param._value.flat[d] += h               # set to f(x + h)
-                f1 = self.forward(dropout=False)
+                f1 = self.forward(deterministic=True)
                 param._value.flat[d] -= 2 * h           # set to f(x - h)
-                f2 = self.forward(dropout=False)
+                f2 = self.forward(deterministic=True)
                 param._value.flat[d] += h               # reset
                 numerical[i].flat[d] = (f1 - f2) / (2 * h)
-            self.forward(dropout=False)
-            self.backward(dropout=True)
+            self.forward(deterministic=True)
+            self.backward(deterministic=True)
             analytic.append(param.gradient)             # analytic gradient f'(x)
         
         numerical = np.concatenate([x.flatten() for x in numerical])
