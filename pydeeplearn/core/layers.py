@@ -152,7 +152,7 @@ class Mirror(Preprocess):
         self._input[0]._gradient += self._gradient[:, :, ::-1, :] if self._flip else self._gradient
 
 class Rotate(Preprocess):
-    def __init__(self, input, minangle=-10, maxangle=10):
+    def __init__(self, input, minangle=-15, maxangle=15):
         self._input = [input]
         self._angles = (minangle, maxangle)
         self._value = np.empty(input.shape, dtype=DTYPE)
@@ -169,7 +169,7 @@ class Rotate(Preprocess):
         self._input[0]._gradient += invtransform(self._gradient, self._A)
 
 class Shear(Preprocess):
-    def __init__(self, input, minshearx=-0.5, maxshearx=0.5, minsheary=-0.5, maxsheary=0.5):
+    def __init__(self, input, minshearx=-0.75, maxshearx=0.75, minsheary=-0.75, maxsheary=0.75):
         self._input = [input]
         self._shearx = (minshearx, maxshearx)
         self._sheary = (minsheary, maxsheary)

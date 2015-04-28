@@ -48,16 +48,6 @@ class Update: # Vanilla SGD (no momentum)
     def apply(self, params, rate):
         for param in params:
             param._value += -rate * param.gradient
-    
-    def __setstate__(self, dict):
-        self.__dict__ = dict
-    
-    def __getstate__(self):
-        dict = self.__dict__.copy()
-        dict['_params'] = []
-        if '_updates' in dict: dict['_updates'] = []
-        if '_cache' in dict: dict['_cache'] = []
-        return dict
 
 class NAG(Update):
     def __init__(self, momentum=0.9):

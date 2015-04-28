@@ -24,7 +24,7 @@ The design of the layers and the modularity is mostly inspired by Mocha and Thea
 * Numerically stable functions
 
 ## Demos
-* Handwritten Digit Recognition: LeNet on MNIST, accuracy = 98.9% (LeCun et al, IEEE 1998)
+* Handwritten Digit Recognition: LeNet on MNIST, accuracy = 99.04% (LeCun et al, IEEE 1998)
  * Feed-forward convolutional neural network (CNN) with a fixed structure. Data is augmented through random crops and random shears.
 * Sentiment Analysis: RNN on Movie Reviews, accuracy = 79.4% (Socher et al, EMNLP 2013)
  * Varying structure recursive neural network (RNN), built through parsing a sentence dependency tree. Word representations are initialized from a pre-trained WordVectors class (GloVe or word2vec).
