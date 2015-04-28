@@ -76,18 +76,18 @@ def transform(np.ndarray[DTYPE_t, ndim=4] im, np.ndarray[DTYPE_t, ndim=2] A):
     
     for hi in range(H):
         for wi in range(W):
-            hin, win = DTYPE(hi) - H / 2.0, DTYPE(wi) - W / 2.0
+            hin, win = hi - H / 2.0, wi - W / 2.0
             alphah = A[0, 0] * hin + A[0, 1] * win + H / 2.0
             alphaw = A[1, 0] * hin + A[1, 1] * win + W / 2.0
+            alphah = 0 if alphah < 0 else H - 1 if alphah >= H else alphah
+            alphaw = 0 if alphaw < 0 else W - 1 if alphaw >= W else alphaw
             
             hj, wj = int(alphah), int(alphaw)
             hk, wk = hj + 1, wj + 1
-            alphah, alphaw = alphah - hj, alphaw - wj
-            
-            hj = 0 if hj < 0 else H - 1 if hj >= H else hj
-            wj = 0 if wj < 0 else W - 1 if wj >= W else wj
             hk = 0 if hk < 0 else H - 1 if hk >= H else hk
             wk = 0 if wk < 0 else W - 1 if wk >= W else wk
+            
+            alphah, alphaw = 1 - (alphah - hj), 1 - (alphaw - wj)
             
             for i in range(N):
                 for ci in range(C):
@@ -108,17 +108,17 @@ def invtransform(np.ndarray[DTYPE_t, ndim=4] transformed, np.ndarray[DTYPE_t, nd
     
     for hi in range(H):
         for wi in range(W):
-            hin, win = DTYPE(hi) - H / 2.0, DTYPE(wi) - W / 2.0
+            hin, win = hi - H / 2.0, wi - W / 2.0
             alphah = A[0, 0] * hin + A[0, 1] * win + H / 2.0
             alphaw = A[1, 0] * hin + A[1, 1] * win + W / 2.0
             
-            hj, wj = int(alphah), int(alphaw)
-            hk, wk = hj + 1, wj + 1
-            alphah, alphaw = alphah - hj, alphaw - wj
-            
-            if hj >= 0 and hj < H and wj >= 0 and wj < W:
+            if alphah >= 0 and alphah < H and alphaw >= 0 and alphaw < W:
+                hj, wj = int(alphah), int(alphaw)
+                hk, wk = hj + 1, wj + 1
                 hk = 0 if hk < 0 else H - 1 if hk >= H else hk
                 wk = 0 if wk < 0 else W - 1 if wk >= W else wk
+                
+                alphah, alphaw = 1 - (alphah - hj), 1 - (alphaw - wj)
                 
                 for i in range(N):
                     for ci in range(C):
